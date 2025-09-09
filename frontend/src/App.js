@@ -4,7 +4,7 @@ import axios from 'axios';
 import 'react-chat-widget/lib/styles.css';
 import './index.css';
 
-const API_BASE_URL = 'http://localhost:8000/api/chat';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/chat';
 const HEARTBEAT_INTERVAL = 60000; // 60 seconds
 const REQUEST_TIMEOUT = 5000; // 5 seconds timeout for requests
 

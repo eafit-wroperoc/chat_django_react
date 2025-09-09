@@ -1,0 +1,72 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: chat_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-chatdb}
+      MYSQL_USER: ${DB_USER:-chatuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-chatpass}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME:-local}/chat-backend:latest
+    container_name: chat_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DB_NAME: ${DB_NAME:-chatdb}
+      DB_USER: ${DB_USER:-chatuser}
+      DB_PASSWORD: ${DB_PASSWORD:-chatpass}
+      DB_HOST: db
+      DB_PORT: 3306
+      CORS_ALLOW_ALL_ORIGINS: ${CORS_ALLOW_ALL_ORIGINS:-True}
+      SEED_DATA: ${SEED_DATA:-1}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_static:/app/staticfiles
+      # Ejemplo: activar hot-reload montando el código local del backend
+      # - ./backend:/app
+      # Ejemplo: montar carpeta local para MEDIA (si usas MEDIA_ROOT=/app/media)
+      # - ./data/media:/app/media
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME:-local}/chat-frontend:latest
+    container_name: chat_frontend
+    depends_on:
+      - backend
+    environment:
+      # Make backend URL available to React app (calls from the browser on the host)
+      REACT_APP_API_BASE_URL: http://localhost:8000/api/chat
+      # Avoid CI warning in CRA
+      CI: "false"
+    ports:
+      - "3000:3000"
+
+volumes:
+  mysql_data:
+  backend_static:
+  # Ejemplo: volumen nombrado para archivos MEDIA
+  # backend_media:

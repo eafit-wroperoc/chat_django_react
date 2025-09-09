@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.Python
+.python-version
+
+# Envs
+venv/
+.venv/
+ENV/
+
+# Django
+staticfiles/
+media/
+
+# DB
+*.sqlite3
+
+# VCS
+.git/
+.gitignore
+
+# OS
+.DS_Store

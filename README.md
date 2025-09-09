@@ -25,6 +25,15 @@ A complete demo project featuring a chat-based e-commerce assistant built with D
 - **react-chat-widget**: Chat interface component
 - **Axios**: HTTP client for API communication
 
+## Tipo de aplicación
+
+Aplicación demo de e‑commerce asistido por chat con arquitectura cliente/servidor:
+
+- Backend: API REST con Django + DRF (stateless, HTTP, sin WebSockets), base de datos MySQL (en Docker) o SQLite en local.
+- Frontend: SPA en React que consume la API (widget de chat) vía HTTP.
+- Comunicación: llamadas REST desde el navegador al backend (no hay push del servidor).
+- Propósito: educativo, para ilustrar modelado, endpoints REST, CORS, consumo desde React y contenerización con Docker Compose.
+
 # Proyecto
 Este proyecto está diseñado para enseñar a crear una experiencia de e-commerce guiada por chat usando un backend en Django REST y un frontend en React.
 
@@ -506,3 +515,171 @@ Modify the React components and CSS in `src/` to customize the appearance and be
 ## License
 
 This is a demo project for educational purposes.
+
+## Contenerización (Docker + Docker Compose)
+
+Este proyecto incluye configuración lista para ejecutar con contenedores:
+
+- Backend (Django) usando `python:3.11-slim`: `backend/Dockerfile`
+- Frontend (React) usando `node:18-alpine`: `frontend/Dockerfile`
+- Base de datos MySQL 8: `docker-compose.yml`
+- Variables de entorno de ejemplo: `env.example` (copiar a `.env`)
+
+### 1) Requisitos previos
+
+- Docker Desktop o Docker Engine + Docker Compose v2
+- Cuenta en Docker Hub (opcional, para publicar imágenes)
+
+### 2) Configurar variables de entorno
+
+1. Copia el archivo `env.example` a `.env` en la raíz del proyecto:
+   ```bash
+   cp env.example .env
+   ```
+2. Edita `.env` si deseas cambiar credenciales de MySQL o valores de Django.
+
+Variables clave en `.env`:
+
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`: credenciales de MySQL
+- `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`
+- `CORS_ALLOW_ALL_ORIGINS`, `SEED_DATA`
+- `DOCKERHUB_USERNAME` (opcional, para etiquetar imágenes con tu usuario)
+
+### 3) Levantar todo con Docker Compose
+
+Desde la raíz del repo (`chat_django_react/`):
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+Servicios y accesos:
+
+- Backend (Django + DRF): http://localhost:8000/
+- Frontend (React): http://localhost:3000/
+- MySQL: puerto 3306 (expuesto para uso local)
+
+El backend espera a MySQL, aplica migraciones y si `SEED_DATA=1`, siembra productos demo automáticamente.
+
+Ver logs:
+
+```bash
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f db
+```
+
+Apagar servicios:
+
+```bash
+docker compose down
+```
+
+Eliminar volúmenes (incluye datos de MySQL):
+
+```bash
+docker compose down -v
+```
+
+### 4) Ajustes técnicos relevantes
+
+- El frontend usa `REACT_APP_API_BASE_URL` (configurado en `docker-compose.yml`) para llamar al backend en `http://backend:8000/api/chat` dentro de la red de Docker.
+- El backend lee la configuración de MySQL desde variables `DB_*`. Si no se define `DB_NAME`, hace fallback a SQLite (modo local sin Docker).
+- `backend/entrypoint.sh` espera a la DB, corre migraciones, opcionalmente siembra datos y arranca con `runserver` (DEBUG) o `gunicorn` (no DEBUG).
+
+### 5) Publicar imágenes en Docker Hub
+
+Opciones:
+
+1) Usar Compose para construir y luego etiquetar/manual push
+
+```bash
+# Compilar imágenes locales con etiquetas definidas en docker-compose.yml
+docker compose build
+
+# Iniciar sesión
+docker login
+
+# Etiquetas (si no definiste DOCKERHUB_USERNAME en .env, usa tu usuario manualmente)
+docker tag local/chat-backend:latest <tu_usuario>/chat-backend:latest
+docker tag local/chat-frontend:latest <tu_usuario>/chat-frontend:latest
+
+# Publicar
+docker push <tu_usuario>/chat-backend:latest
+docker push <tu_usuario>/chat-frontend:latest
+```
+
+2) Usar DOCKERHUB_USERNAME en `.env` para que Compose construya con tu namespace y luego empujar:
+
+```bash
+# Establece DOCKERHUB_USERNAME=tu_usuario en .env
+docker compose build
+docker login
+docker push ${DOCKERHUB_USERNAME}/chat-backend:latest
+docker push ${DOCKERHUB_USERNAME}/chat-frontend:latest
+```
+
+Notas:
+
+- Puedes versionar imágenes cambiando la etiqueta `:latest` por `:v1`, `:v1.0.0`, etc., tanto en `docker-compose.yml` como en los comandos de `docker tag`/`docker push`.
+- Evita subir secretos reales a tu repo o a las imágenes. Usa variables de entorno en tiempo de ejecución.
+
+### 6) Ejemplos de volúmenes (persistencia y desarrollo)
+
+En `docker-compose.yml` ya se definen:
+
+- `mysql_data` (named volume) para persistir la base de datos MySQL.
+- `backend_static` (named volume) para recolectar estáticos de Django (`collectstatic`).
+
+Ejemplos adicionales que puedes activar según tu necesidad:
+
+1) Bind mount del código del backend (hot-reload en desarrollo):
+
+```yaml
+  backend:
+    volumes:
+      - ./backend:/app                # monta el código local dentro del contenedor
+      - backend_static:/app/staticfiles
+```
+
+2) Persistir archivos de usuario (media) en un volumen nombrado:
+
+```yaml
+volumes:
+  mysql_data:
+  backend_static:
+  backend_media:
+
+---
+  backend:
+    volumes:
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media      # si tu proyecto usa MEDIA_ROOT=/app/media
+```
+
+3) Bind mount de media a una carpeta local (útil para inspeccionar archivos desde tu host):
+
+```yaml
+  backend:
+    volumes:
+      - ./data/media:/app/media       # crea carpeta ./data/media en tu proyecto
+```
+
+Comandos útiles con volúmenes:
+
+```bash
+# Listar volúmenes locales
+docker volume ls
+
+# Inspeccionar un volumen (ruta en host)
+docker volume inspect chat_django_react_mysql_data
+
+# Eliminar volúmenes del stack (incluye datos)
+docker compose down -v
+
+
+
+
+
+docker compose up -d --build frontend

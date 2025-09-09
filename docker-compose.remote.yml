@@ -1,0 +1,48 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-chatdb}
+      MYSQL_USER: ${DB_USER:-chatuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-chatpass}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    image: ${DOCKERHUB_USERNAME:-local}/chat-backend:latest
+    depends_on:
+      - db
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DB_NAME: ${DB_NAME:-chatdb}
+      DB_USER: ${DB_USER:-chatuser}
+      DB_PASSWORD: ${DB_PASSWORD:-chatpass}
+      DB_HOST: db
+      DB_PORT: 3306
+      CORS_ALLOW_ALL_ORIGINS: ${CORS_ALLOW_ALL_ORIGINS:-True}
+      SEED_DATA: ${SEED_DATA:-1}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_static:/app/staticfiles
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME:-local}/chat-frontend:latest
+    depends_on:
+      - backend
+    environment:
+      # IMPORTANTE: reemplaza YOUR_PUBLIC_IP o dominio antes de levantar
+      REACT_APP_API_BASE_URL: http://YOUR_PUBLIC_IP_OR_DOMAIN:8000/api/chat
+      CI: "false"
+    ports:
+      - "80:3000"
+
+volumes:
+  mysql_data:
+  backend_static:

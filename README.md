@@ -582,6 +582,92 @@ Eliminar volúmenes (incluye datos de MySQL):
 docker compose down -v
 ```
 
+### 7) Despliegue en AWS EC2 (Free Tier)
+
+Con una instancia t2.micro basta para la demo.
+
+1) Prepara la instancia
+
+- Crea instancia Amazon Linux 2023 (o Ubuntu 22.04), abre puertos en el Security Group:
+  - 80 (HTTP) abierto al mundo.
+  - Opcional 8000 (API) para pruebas.
+  - 22 (SSH) para administrar.
+- Conéctate por SSH: `ssh -i TU_LLAVE.pem ec2-user@IP_PUBLICA` (o `ubuntu@IP_PUBLICA` en Ubuntu).
+- Instala Docker y Compose v2:
+  ```bash
+  sudo dnf update -y && sudo dnf install -y docker docker-compose-plugin || \
+  (sudo apt update -y && sudo apt install -y docker.io docker-compose-plugin)
+  sudo systemctl enable --now docker
+  sudo usermod -aG docker $USER
+  newgrp docker
+  docker --version && docker compose version
+  ```
+
+2) Copia archivos del repo (o clónalo) y crea `.env`
+
+- Sube estos archivos a la instancia (por SCP o git clone):
+  - `docker-compose.remote.yml`
+  - `env.example` (cópialo a `.env` y ajusta)
+- Crea `.env` en el servidor (usa el ejemplo como base):
+  ```bash
+  cp env.example .env
+  # Edita valores si quieres. Asegura incluir tu IP/dominio en DJANGO_ALLOWED_HOSTS si restringes orígenes.
+  ```
+
+3) Edita `docker-compose.remote.yml`
+
+- Cambia `YOUR_PUBLIC_IP_OR_DOMAIN` por la IP pública o tu dominio en:
+  - `frontend.environment.REACT_APP_API_BASE_URL: http://YOUR_PUBLIC_IP_OR_DOMAIN:8000/api/chat`
+- Mapea puertos:
+  - Frontend: `80:3000` (sirve en http://IP_PUBLICA/)
+  - Backend: `8000:8000` (opcional para probar API)
+  - No expongas MySQL.
+
+4) Levanta el stack
+
+```bash
+docker compose -f docker-compose.remote.yml pull   # si usarás imágenes de Docker Hub
+docker compose -f docker-compose.remote.yml up -d  # levanta servicios
+```
+
+5) Probar
+
+- Frontend: `http://IP_PUBLICA/`
+- API: `http://IP_PUBLICA:8000/` (opcional)
+
+Notas:
+
+- El backend migra y siembra datos (si `SEED_DATA=1`).
+- Para producción, considera un proxy (Nginx) y TLS; aquí mantenemos simple para demo.
+
+### 8) Publicar imágenes en Docker Hub (rápido)
+
+Usa tu usuario en `.env` (`DOCKERHUB_USERNAME`) o etiqueta manualmente.
+
+Opción A – construir local y subir:
+```bash
+# Construir imágenes con Compose (usa Dockerfile del repo)
+docker compose build
+
+# Iniciar sesión y etiquetar (si no tienes DOCKERHUB_USERNAME definido)
+docker login
+docker tag local/chat-backend:latest <tu_usuario>/chat-backend:latest
+docker tag local/chat-frontend:latest <tu_usuario>/chat-frontend:latest
+
+# Subir
+docker push <tu_usuario>/chat-backend:latest
+docker push <tu_usuario>/chat-frontend:latest
+```
+
+Opción B – usar `DOCKERHUB_USERNAME` en `.env` para que Compose nombre las imágenes:
+```bash
+echo "DOCKERHUB_USERNAME=<tu_usuario>" >> .env
+docker compose build
+docker login
+docker push ${DOCKERHUB_USERNAME}/chat-backend:latest
+docker push ${DOCKERHUB_USERNAME}/chat-frontend:latest
+```
+
 ### 4) Ajustes técnicos relevantes
 
 - El frontend usa `REACT_APP_API_BASE_URL` (configurado en `docker-compose.yml`) para llamar al backend en `http://backend:8000/api/chat` dentro de la red de Docker.

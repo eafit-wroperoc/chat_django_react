@@ -1,0 +1,66 @@
+backend/.DS_Store
+.DS_Store
+backend/db.sqlite3
+ 
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+.venv*/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+staticfiles/
+media/
+**/migrations/
+backend/chat/migrations/
+
+# Virtual environments
+venv/
+backend/venv/
+.venv/
+
+# Environment files
+.env
+.env.*
+
+# Node / React
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.cache/
+frontend/.parcel-cache/
+frontend/.npm/
+frontend/.yarn/
+frontend/.eslintcache
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend env (local)
+frontend/.env.local
+frontend/.env.*.local
+
+# OS files
+*/.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# Coverage / Reports
+.coverage
+coverage/
+htmlcov/
+
+# Archives / bundles
+chat_django_react_code.tgz
+*.tgz
+*.tar.gz
+*.zip

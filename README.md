@@ -1,3 +1,8 @@
+### Glosario breve
+
+- **DJANGO_ALLOWED_HOSTS**: lista de hostnames que Django acepta. Si no incluyes tu dominio/IP, Django rechazará la petición con 400 (Bad Request).
+- **CORS (Cross-Origin Resource Sharing)**: política del navegador que controla si una web (frontend) puede llamar a una API en otro origen (dominio/puerto). En clase/demo puedes permitir todo (`CORS_ALLOW_ALL_ORIGINS=True`). En producción, define explícitamente los orígenes permitidos (`CORS_ALLOWED_ORIGINS`) para mayor seguridad.
+- **DJANGO_SECRET_KEY**: clave criptográfica usada por Django para firmar cookies de sesión, tokens CSRF y otros elementos de seguridad. Debe ser larga, aleatoria y mantenerse en secreto (nunca subir al repositorio). En este proyecto se genera automáticamente en `.env` para la demo. En producción, rota la clave con cuidado (puede invalidar sesiones activas).
 # Chat-Based E-Commerce Assistant
 
 A complete demo project featuring a chat-based e-commerce assistant built with Django REST Framework backend and React frontend.
@@ -623,14 +628,25 @@ Con una instancia t2.micro basta para la demo.
   - Backend: `8000:8000` (opcional para probar API)
   - No expongas MySQL.
 
-4) Levanta el stack
+4) Ajusta hosts permitidos y CORS (importante)
+
+- En `.env` agrega tu dominio público de Amazon en `DJANGO_ALLOWED_HOSTS` para que Django acepte peticiones HTTP a ese host:
+  ```env
+  DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend,ec2-xx-xx-xx-xx.compute-1.amazonaws.com
+  ```
+- CORS en demo: deja `CORS_ALLOW_ALL_ORIGINS=True` para simplificar (el navegador podrá llamar a la API desde el frontend servido en el puerto 80).
+- CORS estricto (opcional):
+  - Pon `CORS_ALLOW_ALL_ORIGINS=False` y agrega a `CORS_ALLOWED_ORIGINS` el origen real, por ejemplo `http://ec2-xx-xx-xx-xx.compute-1.amazonaws.com`.
+  - En este repo ya existe una lista base en `mysite/settings.py`; para una demo, usar `True` es suficiente.
+
+5) Levanta el stack
 
 ```bash
 docker compose -f docker-compose.remote.yml pull   # si usarás imágenes de Docker Hub
 docker compose -f docker-compose.remote.yml up -d  # levanta servicios
 ```
 
-5) Probar
+6) Probar
 
 - Frontend: `http://IP_PUBLICA/`
 - API: `http://IP_PUBLICA:8000/` (opcional)

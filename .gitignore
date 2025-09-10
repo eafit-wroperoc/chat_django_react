@@ -25,8 +25,8 @@ backend/venv/
 .venv/
 
 # Environment files
-.env
-.env.*
+# .env
+# .env.*
 
 # Node / React
 frontend/node_modules/

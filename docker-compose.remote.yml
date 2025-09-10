@@ -37,8 +37,8 @@ services:
     depends_on:
       - backend
     environment:
-      # IMPORTANTE: reemplaza YOUR_PUBLIC_IP o dominio antes de levantar
-      REACT_APP_API_BASE_URL: http://YOUR_PUBLIC_IP_OR_DOMAIN:8000/api/chat
+      # IMPORTANTE: URL pública del backend a la que se conectará el navegador
+      REACT_APP_API_BASE_URL: http://ec2-xx-xx-xx-xx.compute-1.amazonaws.com:8000/api/chat
       CI: "false"
     ports:
       - "80:3000"
